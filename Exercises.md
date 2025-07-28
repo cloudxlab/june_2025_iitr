@@ -609,8 +609,8 @@ Write a function named `compute_huber_distance(actual, predicted, delta)` that:
 ### **Example Usage:**
 
 ```python
-compute_huber_distance(10, 8, 1.5)   # Output: 2.125  
-compute_huber_distance(10, 9.5, 1.5) # Output: 0.125  
+compute_huber_distance(10, 8, 1.5)   # Output: 2  
+compute_huber_distance(10, 9.5, 1.5) # Output: 0.25  
 compute_huber_distance(5, 5, 1)      # Output: 0.0  
 ```
 
@@ -681,6 +681,7 @@ For example:
 * If A = 2, B = 5, and P = 3 → P is between 2 and 5 → ✅
 * If A = -5, B = -2, and P = -3 → P is between -5 and -2 → ✅
 * If A = -5, B = -2, and P = -6 → P is outside the range → ❌
+* If A = 2, B = 5, and P = 2 → P is between 2 and 5 → ✅
 
 It doesn’t matter whether A is smaller than B or the other way around — we always check the range between them.
 
