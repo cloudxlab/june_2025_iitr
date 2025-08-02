@@ -569,11 +569,6 @@ Make sure to import any libraries (like `math`) if needed.
 
 # Chapter 2. if - else
 ## Huber Distance
----
-
-Here’s the **final version of the exercise** with the **continuity condition explained and actual formula as a hint**:
-
----
 
 ### **Topic:** *Compute Huber Distance Between Two Points in 2D*
 
