@@ -569,50 +569,81 @@ Make sure to import any libraries (like `math`) if needed.
 
 # Chapter 2. if - else
 ## Huber Distance
----
 
-### **Topic:** *Compute Huber Distance*
+### **Topic:** *Compute Huber Distance Between Two Points in 2D*
 
 ---
 
 ### **Explanation:**
 
-In machine learning and statistics, **Huber distance** is a special way of measuring the error between two values — typically the *actual* and the *predicted*. It’s designed to be *less sensitive to outliers* than the usual squared error.
+The **Huber distance** is a robust way to measure the difference between two points. It combines the benefits of:
 
-The idea is simple:
+* **Squared distance** for small differences (smooth and differentiable near zero).
+* **Linear distance** for large differences (less sensitive to outliers).
 
-* If the difference between the actual and predicted value is **small**, we treat the error like **squared error**.
-* If the difference is **large**, we treat it more like **absolute error**.
+For two points in **2D space**:
 
-The point where we switch between these two behaviors is decided by a value called **delta**.
+* Represent each point as `(x, y)`.
+* First, compute the **Euclidean distance** between the points.
+* Apply the Huber idea:
 
-To compute the Huber distance:
+  * If the distance $d \le \delta$, use a **quadratic function** of $d$.
+  * If the distance $d > \delta$, use a **linear function** of $d$, but make sure the function is **continuous** at $d = \delta$.
 
-1. First, find the **error** by subtracting the predicted value from the actual value.
-2. If the absolute value of the error is **less than or equal to delta**, use the squared error formula.
-3. Otherwise, use a modified absolute error formula that uses delta.
+**Important:**
+At $d = \delta$, both formulas should return the **same value**. This ensures a smooth transition.
 
 ---
 
 ### **Exercise:**
 
-Write a function named `compute_huber_distance(actual, predicted, delta)` that:
+Write a function `compute_huber_distance_2d(p1, p2, delta)` that:
 
-* Takes three arguments:
+* Inputs:
 
-* `actual`: the true value (a number)
-* `predicted`: the predicted value (a number)
-* `delta`: the threshold that decides when to switch error formulas
-* Returns the Huber distance between the actual and predicted value using the rules described above.
+  * `p1`: first point as `(x1, y1)`
+  * `p2`: second point as `(x2, y2)`
+  * `delta`: threshold where the formula switches from quadratic to linear
+* Returns:
+
+  * The **Huber distance** between the two points.
 
 ---
+
+#### **Steps to guide you:**
+
+1. Compute the **Euclidean distance**:
+
+   $$
+   d = \sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2}
+   $$
+2. If $d \le \delta$, compute:
+
+   $$
+   \text{distance} = 0.5 \times d^2
+   $$
+3. If $d > \delta$, compute:
+
+   $$
+   \text{distance} = \delta \times (d - 0.5 \times \delta)
+   $$
+
+   **Hint:** This formula ensures continuity because at $d = \delta$, both formulas give:
+
+   $$
+   0.5 \times \delta^2
+   $$
+
+---
+
 ### **Example Usage:**
 
 ```python
-compute_huber_distance(10, 8, 1.5)   # Output: 2  
-compute_huber_distance(10, 9.5, 1.5) # Output: 0.25  
-compute_huber_distance(5, 5, 1)      # Output: 0.0  
+compute_huber_distance_2d((0, 0), (1, 1), 1.5)   # Expected: ~1.0 (quadratic region)
+compute_huber_distance_2d((0, 0), (3, 4), 1.5)   # Expected: > linear region
+compute_huber_distance_2d((2, 3), (2, 3), 2)     # Expected: 0.0
 ```
+
 
 ## Check if a point P is closer to point A or point B in 2D
 
