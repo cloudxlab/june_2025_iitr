@@ -1,16 +1,22 @@
-## Compute power_integer(x, n)
 
-## Tower of hanoi
 
 # Chapter 4. Loops and Array
 
+<!-- ## Check if a point P is closer to point A or point B in N-Dimension
 ## Find nearest neighbour in 1D, 2D and 3D and ND
 ## Compute mean
 ## Compute SD
 ## Compute root mean square error in n-dimensions
 ## Compute mean absolute error  in n-dimensions
-## Compute huber loss in n-dimensions
-## Check if a point P is closer to point A or point B in N-Dimension
+## Compute huber loss
+## multiply two polynomials, each polynomial is represented as an array of coefficients
+## solve an equation of n variables, you have the values of n-1 variables, find the value of n+1 variables. You have list containing the values of n-1 variables. You have the coffiecients and the right side value available as a list. You have to find the value of first variable. For example:
+# you have an equation: 3x + 4y + 6z = 20, you are given the value of y = 5 and z = 6 and you have find the value of x.
+# The same is represented as two lists, equation=[3, 4, 6, 20] and vars = [5, 6]
+# to find x we need to calculate the following: (20 - (5*4+6*6))/3 -->
+
+# Chapter 5. Binary Search
+
 ## Compute Sqrt
 ## Compute CubeRoot
 ## Compute nth Root
