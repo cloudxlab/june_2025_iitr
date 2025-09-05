@@ -47,6 +47,7 @@ multiply two polynomials. A polynomial is represented by the list of coefficient
     
     Solve the expression written as array of arrays of three elements: First one is operator and others are operands such as ["*" ["+" 20 40] 90] -> (20+40)*90
 
+
 -->
 
 # Chapter 5. Binary Search
@@ -58,7 +59,8 @@ multiply two polynomials. A polynomial is represented by the list of coefficient
 ## Compute log base n, you can use ** for power.
 
 # Chapter 6. Dictionary and Sets
-## 
+## Word Count
+## Find Anagrams
 
 # Chapter 5. Objects and Classes
 
