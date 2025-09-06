@@ -2,10 +2,13 @@
 
 # Chapter 4. Loops and Array
 
+
 <!-- ## Check if a point P is closer to point A or point B in N-Dimension
 ## Find nearest neighbour in 1D, 2D and 3D and ND
 ## Compute mean
 ## Compute SD
+
+
 ## Compute root mean square error in n-dimensions
 ## Compute mean absolute error  in n-dimensions
 ## Compute huber loss
@@ -13,7 +16,39 @@
 ## solve an equation of n variables, you have the values of n-1 variables, find the value of n+1 variables. You have list containing the values of n-1 variables. You have the coffiecients and the right side value available as a list. You have to find the value of first variable. For example:
 # you have an equation: 3x + 4y + 6z = 20, you are given the value of y = 5 and z = 6 and you have find the value of x.
 # The same is represented as two lists, equation=[3, 4, 6, 20] and vars = [5, 6]
-# to find x we need to calculate the following: (20 - (5*4+6*6))/3 -->
+# to find x we need to calculate the following: (20 - (5*4+6*6))/3 
+## Come upwith n-1 equations from n equations by eliminating one variable
+## Check if a number is an outlier
+normalization - min-max, standardizations
+
+multiply a polynomial with a number. A polynomial is represented by the list of coefficients. For example 2x^3 + 3x + 10 is [2, 0, 3, 10]
+    
+add two polynomials. A polynomial is represented by the list of coefficients. For example 2x^3 + 3x + 10 is [2, 0, 3, 10]
+
+multiply two polynomials. A polynomial is represented by the list of coefficients. For example 2x^3 + 3x + 10 is [2, 0, 3, 10]
+
+    Design fair coin-toss - print Head, TAIL and return 0 for head and 1 for tails. You can only use random.random()
+
+    
+    Design biased coin-toss, 70% times head, 30% times tails.
+    
+    Design biased coin-toss, take p probability of head as arguments.
+    
+    Design weighted choices function which takes a list of probabilities. It should return the index of the elements with the same weighted chance.
+
+    You are given a list of numbers. Convert them into probabilities such that the total of these decimal numbers is 1. [1,2,2] -> [0.2, .4, .4]
+
+    Design softmax.
+
+    Design weighted choices with temperature.
+
+    
+    Flatten an array [1,[1,2,[3,4]]] -> [1,1,2,3,4]
+    
+    Solve the expression written as array of arrays of three elements: First one is operator and others are operands such as ["*" ["+" 20 40] 90] -> (20+40)*90
+
+
+-->
 
 # Chapter 5. Binary Search
 
@@ -24,6 +59,8 @@
 ## Compute log base n, you can use ** for power.
 
 # Chapter 6. Dictionary and Sets
+## Word Count
+## Find Anagrams
 
 # Chapter 5. Objects and Classes
 
