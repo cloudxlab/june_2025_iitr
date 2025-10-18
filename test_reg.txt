@@ -1,0 +1,233 @@
+# train_is_healthy.py
+# Python 3.9+ recommended
+# pip install pandas scikit-learn numpy joblib
+
+from __future__ import annotations
+import os
+import re
+import json
+import math
+import joblib
+import numpy as np
+import pandas as pd
+
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
+from sklearn.metrics import (
+    accuracy_score, precision_recall_fscore_support, roc_auc_score,
+    classification_report, confusion_matrix, average_precision_score
+)
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.inspection import permutation_importance
+
+# -----------------------------
+# 1) CONFIG
+# -----------------------------
+CSV_PATH = "life_style_data.csv"   # set to your downloaded file
+TARGET = "is_healthy"
+MODEL_PATH = "is_healthy_model.joblib"
+FEATURES_JSON = "is_healthy_features.json"
+IMPORTANCE_CSV = "feature_importances.csv"
+RANDOM_STATE = 42
+TEST_SIZE = 0.2
+
+# Optional: columns that are likely IDs/names/leaky text we don't want as predictors
+LIKELY_NON_PRED_COLS = {
+    # obvious names/ids/labels
+    TARGET,
+    "Name of Exercise", "Workout", "Workout_Type", "Benefit", "Type of Muscle",
+    "Target Muscle Group", "Equipment Needed", "Difficulty Level", "Body Part",
+    "meal_name", "meal_type", "diet_type", "cooking_method",
+    # exact duplicates/derived targets if present
+    "Burns Calories (per 30 min)", "Burns Calories (per 30 min)_bc", "Burns_Calories_Bin",
+    # sometimes there are explicitly computed helper columns that can leak
+    "BMI_calc", "cal_from_macros", "expected_burn", "cal_balance",
+}
+
+# If your file has different headers (extra spaces, different cases), we’ll normalize them.
+
+# -----------------------------
+# 2) LOAD & BASIC CLEANING
+# -----------------------------
+def load_data(path: str) -> pd.DataFrame:
+    if not os.path.exists(path):
+        raise FileNotFoundError(
+            f"CSV not found at {path}. Put your Kaggle CSV here or update CSV_PATH."
+        )
+    df = pd.read_csv(path)
+    # normalize column names: strip, lowercase, replace spaces and weird chars with underscores
+    df.columns = [
+        re.sub(r"[^0-9a-zA-Z_]+", "_", c.strip().lower())
+        for c in df.columns
+    ]
+    return df
+
+def coerce_target(df: pd.DataFrame, target_col: str) -> pd.Series:
+    # Accept True/False, "True"/"False", 0/1, "Yes"/"No", etc.
+    if target_col not in df.columns:
+        raise KeyError(
+            f"'{target_col}' not found after normalization. "
+            "Open the CSV and confirm the exact column name."
+        )
+    y = df[target_col]
+    if y.dtype == bool:
+        return y.astype(int)
+    if y.dtype.kind in ("i", "u", "f"):
+        # numeric—assume already 0/1 or threshold at 0.5
+        # If multiclass sneaks in, binarize at >0.5
+        return (y.astype(float) > 0.5).astype(int)
+    # string-like: map common truthy/falsey tokens
+    truthy = {"true","yes","y","healthy","1","t"}
+    falsy  = {"false","no","n","unhealthy","0","f"}
+    def to01(v):
+        if pd.isna(v):
+            return np.nan
+        s = str(v).strip().lower()
+        if s in truthy: return 1
+        if s in falsy:  return 0
+        # fallback: try numeric
+        try:
+            return int(float(s) > 0.5)
+        except:
+            return np.nan
+    y = y.map(to01)
+    if y.isna().mean() > 0.05:
+        raise ValueError("Too many unknown target values; please clean the target column.")
+    return y.fillna(0).astype(int)
+
+# -----------------------------
+# 3) FEATURE SELECTION HEURISTICS
+# -----------------------------
+def pick_features(df: pd.DataFrame, target_col: str) -> tuple[list[str], list[str]]:
+    cols = [c for c in df.columns if c != target_col]
+    # drop columns that look like IDs/names or are known leaky (normalized versions)
+    normalized_nopred = {re.sub(r'[^0-9a-zA-Z_]+', '_', c.strip().lower())
+                         for c in LIKELY_NON_PRED_COLS}
+    cols = [c for c in cols if c not in normalized_nopred]
+
+    # drop extremely sparse columns or zero-variance columns
+    nunique = df[cols].nunique(dropna=False)
+    zero_var = nunique[nunique <= 1].index.tolist()
+    cols = [c for c in cols if c not in zero_var]
+
+    # split numeric vs categorical
+    num_cols = [c for c in cols if pd.api.types.is_numeric_dtype(df[c])]
+    cat_cols = [c for c in cols if c not in num_cols]
+
+    return num_cols, cat_cols
+
+# -----------------------------
+# 4) BUILD PIPELINE
+# -----------------------------
+def build_pipeline(num_cols: list[str], cat_cols: list[str]) -> Pipeline:
+    numeric = Pipeline(steps=[
+        ("imputer", SimpleImputer(strategy="median")),
+        # HistGradientBoosting handles missing/floats well; scaling not required
+    ])
+    categorical = Pipeline(steps=[
+        ("imputer", SimpleImputer(strategy="most_frequent")),
+        ("onehot", OneHotEncoder(handle_unknown="ignore", sparse=False, min_frequency=0.01)),
+    ])
+    pre = ColumnTransformer(
+        transformers=[
+            ("num", numeric, num_cols),
+            ("cat", categorical, cat_cols),
+        ],
+        remainder="drop",
+        verbose_feature_names_out=False,
+    )
+    clf = HistGradientBoostingClassifier(
+        learning_rate=0.08,
+        max_depth=None,
+        max_leaf_nodes=31,
+        l2_regularization=0.0,
+        random_state=RANDOM_STATE
+    )
+    pipe = Pipeline(steps=[("pre", pre), ("clf", clf)])
+    return pipe
+
+# -----------------------------
+# 5) TRAIN / EVAL
+# -----------------------------
+def main():
+    df = load_data(CSV_PATH)
+    y = coerce_target(df, TARGET)
+    num_cols, cat_cols = pick_features(df, TARGET)
+
+    X = df[num_cols + cat_cols].copy()
+
+    # Train/validation split
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
+    )
+
+    pipe = build_pipeline(num_cols, cat_cols)
+    pipe.fit(X_train, y_train)
+
+    # Inference & metrics
+    proba = pipe.predict_proba(X_test)[:, 1]
+    preds = (proba >= 0.5).astype(int)
+
+    acc = accuracy_score(y_test, preds)
+    pr, rc, f1, _ = precision_recall_fscore_support(y_test, preds, average="binary", zero_division=0)
+    try:
+        auc = roc_auc_score(y_test, proba)
+    except ValueError:
+        auc = float("nan")
+    ap = average_precision_score(y_test, proba)
+
+    print("\n=== Holdout Metrics ===")
+    print(f"Accuracy:  {acc:.4f}")
+    print(f"Precision: {pr:.4f}")
+    print(f"Recall:    {rc:.4f}")
+    print(f"F1:        {f1:.4f}")
+    print(f"ROC AUC:   {auc:.4f}")
+    print(f"PR AUC:    {ap:.4f}")
+    print("\nClassification report:")
+    print(classification_report(y_test, preds, digits=3))
+    print("Confusion matrix:\n", confusion_matrix(y_test, preds))
+
+    # CV (quick)
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
+    cv_auc = cross_val_score(pipe, X, y, cv=cv, scoring="roc_auc")
+    print(f"\n5-fold CV ROC AUC: mean={cv_auc.mean():.4f} ± {cv_auc.std():.4f}")
+
+    # Save model + columns
+    joblib.dump(pipe, MODEL_PATH)
+    with open(FEATURES_JSON, "w") as f:
+        json.dump({
+            "numeric_columns": num_cols,
+            "categorical_columns": cat_cols
+        }, f, indent=2)
+    print(f"\nSaved model to: {MODEL_PATH}")
+    print(f"Saved feature metadata to: {FEATURES_JSON}")
+
+    # Permutation importance (on test set) to get human-readable feature importances
+    # Note: this can be a bit slow; feel free to lower n_repeats.
+    print("\nComputing permutation importances (test set)...")
+    r = permutation_importance(pipe, X_test, y_test, n_repeats=5, random_state=RANDOM_STATE, scoring="roc_auc")
+    # Map back to transformed feature names
+    # We'll extract feature names from the preprocessor:
+    pre = pipe.named_steps["pre"]
+    # numeric names
+    num_names = list(pre.transformers_[0][2])
+    # categorical one-hot names
+    onehot = pre.transformers_[1][1].named_steps["onehot"]
+    cat_input_names = list(pre.transformers_[1][2])
+    cat_out_names = list(onehot.get_feature_names_out(cat_input_names))
+    all_feature_names = num_names + cat_out_names
+
+    importances = pd.DataFrame({
+        "feature": all_feature_names,
+        "importance_mean": r.importances_mean,
+        "importance_std": r.importances_std
+    }).sort_values("importance_mean", ascending=False)
+    importances.to_csv(IMPORTANCE_CSV, index=False)
+    print(f"Top features:\n{importances.head(20)}")
+    print(f"\nSaved permutation importances to: {IMPORTANCE_CSV}")
+
+if __name__ == "__main__":
+    main()
