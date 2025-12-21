@@ -14,6 +14,8 @@ X, y = Train_data[:-1], Train_data[-1]
 
 # Descriptive analyses / Visual analyis
 
+
+
 # Do we need to remove duplicates or redundant? 
 
 
@@ -65,3 +67,10 @@ Create a team of these model and take the average of the result
 
 # Using Model we will predict the house prices.
 y = model.predict(X)
+
+========
+pd.read_csv
+.head()
+.info()
+.describe()
+.value_counts()
