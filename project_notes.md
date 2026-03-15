@@ -74,3 +74,4 @@ pd.read_csv
 .info()
 .describe()
 .value_counts()
+.hist(bins=50, figsize=(20,15))
